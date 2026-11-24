@@ -118,12 +118,6 @@ A comunicação utiliza mensagens em formato semelhante a JSON.
 ```text
 ECOPET-3D/
 ├── README.md
-├── hardware/
-│   ├── imagens/
-│   ├── modelos-3d/
-│   ├── arquivos-fabricacao/
-│   ├── esquema-eletrico/
-│   └── lista-de-componentes.md
 ├── firmware/
 │   └── fabricaembarcado.ino
 ├── web/
