@@ -1,117 +1,16 @@
-# ECOPET 3D
+# ECOPET-3D
 
-## Sobre o projeto
+Projeto desenvolvido no curso de Ciência da Computação da Universidade Católica de Pernambuco (UNICAP), na disciplina de Gerenciamento de Projetos (Prof. Danilo Paiva Lúcio), voltado à transformação de garrafas PET em filamento para impressão 3D por meio de preparação/corte da tira, aquecimento, conformação e tração[cite: 7].
 
-O **ECOPET 3D** é um projeto de inovação social que transforma garrafas PET descartadas em filamento com potencial de utilização em impressão 3D.
+> **Nota de escopo:** Este `README.md` reúne a documentação técnica do MVP e o estado atual do repositório. Alguns itens descritos no relatório técnico (como modelos 3D, esquema elétrico e medições experimentais) ainda não estão versionados nos arquivos atuais[cite: 6, 7].
 
-A solução une sustentabilidade, fabricação digital, eletrônica e desenvolvimento de software. O processo envolve a preparação e o corte da garrafa, o aquecimento e a conformação do PET, a tração do material e o recolhimento do filamento produzido.
+## Visão geral e arquitetura
 
-## Objetivo do repositório
+O fluxo do processo é dividido em cinco etapas: preparação da garrafa PET, corte em tira contínua, aquecimento do material, tração e conformação no hotend e recolhimento em carretel[cite: 7].
 
-Este repositório centraliza os materiais relacionados ao desenvolvimento do ECOPET 3D, incluindo:
-
-- arquivos de fabricação das peças;
-- imagens do equipamento;
-- firmware do Arduino;
-- interface web de controle;
-- procedimentos e resultados de testes.
-
-A organização busca facilitar a compreensão, a manutenção, a reprodução e a evolução do projeto.
-
-## Estado atual
-
-O projeto possui um **MVP físico e computacional construído e funcional**.
-
-A estrutura mecânica e os componentes eletrônicos foram integrados ao firmware embarcado e à interface web. O sistema permite aquecer e conformar a tira de PET, controlar o motor de tração e acompanhar o funcionamento do equipamento pelo navegador.
-
-Embora o MVP esteja funcional, o projeto ainda pode receber melhorias relacionadas à segurança, calibração do sensor, estabilidade térmica, controle da velocidade e regularidade do filamento produzido.
-
-## Arquitetura do sistema
-
-O ECOPET 3D está organizado em quatro partes principais.
-
-### 1. Estrutura mecânica
-
-Sustenta os componentes e conduz o PET durante o processo. Inclui base estrutural, suportes, peças impressas em 3D, mecanismo de tração e sistema de recolhimento.
-
-### 2. Sistema eletrônico e térmico
-
-Os principais componentes são:
-
-- Arduino Nano;
-- hotend e elemento de aquecimento;
-- termistor NTC 100k;
-- relé;
-- motor de passo;
-- driver L298N;
-- fonte de alimentação de 12 V.
-
-### 3. Firmware embarcado
-
-O arquivo `fabricaembarcado.ino` contém o código executado no Arduino Nano. O firmware é responsável por:
-
-- ler e suavizar a temperatura do termistor;
-- acionar o aquecedor pelo relé;
-- controlar velocidade e sentido do motor de passo;
-- receber comandos pela porta serial;
-- enviar telemetria para a interface web.
-
-O código utiliza a biblioteca `Stepper.h`, com motor configurado para 200 passos por volta e comunicação serial a **115200 baud**.
-
-### 4. Interface web
-
-O arquivo `pet_filament_extruder_web_serial_controller_arduino_firmware.html` funciona como painel de controle e monitoramento.
-
-Por meio da Web Serial API, a interface permite:
-
-- conectar o navegador ao Arduino;
-- acompanhar a temperatura atual e definir a temperatura-alvo;
-- ligar e desligar o aquecedor e o motor;
-- ajustar velocidade e sentido de rotação;
-- acompanhar a temperatura em um gráfico em tempo real.
-
-## Funcionamento do MVP
-
-1. A garrafa PET é higienizada, seca e cortada em uma tira contínua.
-2. A tira é posicionada no equipamento.
-3. A interface web é conectada ao Arduino pela porta serial.
-4. A temperatura-alvo é definida e o aquecedor é acionado.
-5. O Arduino monitora a temperatura pelo termistor.
-6. O motor puxa a tira de PET pelo conjunto aquecido.
-7. O material é conformado e recolhido no carretel.
-8. A interface apresenta a temperatura e os estados do sistema.
-
-A temperatura e a velocidade de tração influenciam diretamente o formato e a regularidade do filamento.
-
-## Controle e comunicação
-
-O firmware calcula a média de 10 leituras do termistor para reduzir ruídos. A temperatura é verificada aproximadamente a cada **300 ms** e a telemetria é enviada a cada **500 ms**.
-
-O aquecedor utiliza controle liga/desliga: abaixo da temperatura-alvo, o relé é ligado; ao alcançar ou ultrapassar o valor definido, o relé é desligado.
-
-A comunicação utiliza mensagens em formato semelhante a JSON.
-
-### Exemplos de comandos
-
-```json
-{"target":240}
-{"heater":1}
-{"motor":1}
-{"speed":15}
-{"dir":1}
-```
-
-### Exemplo de telemetria
-
-```json
-{
-  "temp": 238.5,
-  "target": 240,
-  "relay": 1,
-  "speed": 15,
-  "motor": 1
-}
-```
+- **Subsistema mecânico e estrutural:** base em MDF, peças impressas em 3D (suportes, mancais, engrenagens de redução e mecanismo de tração) e hotend adaptado (bloco de alumínio e bico de referência nominal de 1,75 mm)[cite: 7].
+- **Hardware e eletrônica:** Arduino Nano (ATmega328P), motor de passo NEMA 17, driver/ponte H L298N, cartucho aquecedor, termistor NTC 100 kΩ (divisor resistivo em entrada analógica) e alimentação principal de 12 V DC (com regulação para 5 V)[cite: 7].
+- **Software e controle:** firmware em C/C++ para Arduino Nano (`115200` baud) e interface web via Web Serial API para envio de comandos JSON e acompanhamento de telemetria em tempo real[cite: 5, 7].
 
 ## Estrutura do repositório
 
@@ -123,110 +22,54 @@ ECOPET-3D/
 ├── web/
 │   └── pet_filament_extruder_web_serial_controller_arduino_firmware.html
 └── tests/
-    ├── procedimentos/
-    └── resultados/
+    └── simulador_serial.html
 ```
 
-### Descrição das pastas
+### Descrição das pastas e arquivos atuais
 
-- `hardware/`: imagens, modelos 3D, arquivos de fabricação, esquema elétrico e lista de componentes.
-- `firmware/`: código embarcado executado no Arduino Nano.
-- `web/`: interface web de controle e monitoramento.
-- `tests/`: procedimentos, medições e resultados dos testes.
-
-> Pastas sem conteúdo podem ser adicionadas conforme os respectivos arquivos forem produzidos.
+- `firmware/fabricaembarcado.ino`: código embarcado do Arduino Nano para leitura térmica, acionamento do aquecimento e controle do motor de passo via L298N[cite: 6, 7].
+- `web/pet_filament_extruder_web_serial_controller_arduino_firmware.html`: painel web com conexão Web Serial (`115200` baud), gráfico de temperatura em tempo real, ajuste de temperatura-alvo e controle de velocidade/sentido do motor[cite: 5, 6].
+- `tests/simulador_serial.html`: simulador de bancada para testar leitura/simulação de dados JSON, gráfico e estados sem depender do hardware conectado[cite: 6].
+- `hardware/` *(planejada)*: modelos 3D, arquivos de fatiamento/fabricação, esquema elétrico e lista de componentes[cite: 6, 7].
 
 ## Tecnologias e ferramentas
 
-### Software
+### Software e comunicação
+- Arduino IDE e C/C++ para Arduino[cite: 7]
+- Biblioteca `Stepper.h`[cite: 7]
+- HTML, CSS e JavaScript com Web Serial API[cite: 5, 7]
+- Comunicação serial a `115200` baud[cite: 5, 7]
 
-- Arduino IDE;
-- C/C++ para Arduino;
-- biblioteca `Stepper.h`;
-- HTML, CSS e JavaScript;
-- Web Serial API;
-- comunicação serial a 115200 baud.
-
-### Fabricação digital
-
-- Bambu Lab P2S;
-- Anet A6;
-- Bambu Studio;
-- Ultimaker Cura;
-- arquivos STL e G-code.
-
-### Hardware
-
-- Arduino Nano;
-- termistor NTC 100k;
-- hotend;
-- relé;
-- motor de passo;
-- driver L298N;
-- fonte de 12 V;
-- base em MDF;
-- peças produzidas por impressão 3D.
+### Fabricação digital e hardware
+- Impressoras 3D Bambu Lab P2S e Anet A6; fatiadores Bambu Studio e Ultimaker Cura (STL e G-code)[cite: 7]
+- Arduino Nano (ATmega328P), termistor NTC 100 kΩ, hotend, relé/acionamento térmico, motor de passo NEMA 17, driver L298N, fonte 12 V DC, base em MDF e peças impressas em 3D[cite: 5, 7]
 
 ## Como executar
 
-### 1. Carregar o firmware
+### 1. Firmware (Arduino Nano)
+1. Abra `firmware/fabricaembarcado.ino` na Arduino IDE[cite: 6, 7].
+2. Conecte o Arduino Nano via USB e selecione a placa e a porta serial corretas[cite: 7].
+3. Confirme a instalação da biblioteca `Stepper`[cite: 7].
+4. Compile e envie o código para a placa[cite: 7].
 
-1. Abra `fabricaembarcado.ino` na Arduino IDE.
-2. Conecte o Arduino Nano ao computador.
-3. Selecione a placa e a porta serial corretas.
-4. Verifique se a biblioteca `Stepper` está disponível.
-5. Compile e envie o firmware.
+### 2. Interface web (Web Serial)
+1. Abra `web/pet_filament_extruder_web_serial_controller_arduino_firmware.html` no Google Chrome ou Microsoft Edge[cite: 5, 6, 7].
+2. Clique em **Conectar Serial** e escolha a porta do Arduino[cite: 5, 7].
+3. Ajuste a temperatura-alvo, ative o aquecimento e acione o motor quando o conjunto estiver pronto[cite: 5, 7].
 
-### 2. Abrir a interface web
+### 3. Simulador de teste (sem hardware)
+1. Abra `tests/simulador_serial.html` no navegador[cite: 6].
+2. Use os botões de simulação, auto-teste ou envio de JSON para validar a visualização antes de conectar ao equipamento físico[cite: 6].
 
-1. Abra o arquivo HTML no Microsoft Edge ou Google Chrome.
-2. Clique em **Conectar Serial**.
-3. Selecione a porta do Arduino.
-4. Defina a temperatura-alvo.
-5. Ative o aquecimento e acompanhe a temperatura.
-6. Acione o motor quando o equipamento estiver preparado.
+## Resultados, limitações e próximos passos
 
-> A interface depende de um navegador compatível com a Web Serial API.
+O projeto documenta a reconstrução do MVP físico e o controle serial/web para validar o fluxo de transformação de garrafas PET em filamento[cite: 7]. Medições quantitativas (diâmetro médio, massa processada, tempo de produção e regularidade) ainda não foram registradas em testes controlados[cite: 7].
 
-## Resultados
-
-O projeto resultou em um MVP físico e computacional capaz de aquecer e conformar a tira de PET, controlar o motor de tração, medir e exibir a temperatura, receber comandos pela interface web e enviar telemetria em tempo real.
-
-Medições como diâmetro médio, massa processada, tempo de produção e regularidade do filamento ainda devem ser documentadas por testes controlados.
-
-## Limitações e melhorias
-
-Os principais pontos de melhoria são:
-
-- calibração do termistor;
-- estabilidade da temperatura;
-- controle mais preciso da velocidade;
-- regularidade do diâmetro do filamento;
-- tratamento de erros da comunicação serial;
-- validação dos comandos recebidos;
-- testes do filamento em impressoras 3D;
-- desligamento automático em caso de falha do sensor;
-- limite máximo de temperatura;
-- implementação de histerese ou controle PID.
-
-## Segurança
-
-O equipamento possui componentes aquecidos, elétricos e móveis. Durante a utilização:
-
-- não toque no hotend;
-- mantenha as conexões elétricas protegidas;
-- desligue a alimentação antes de realizar ajustes;
-- mantenha mãos e objetos afastados das partes móveis;
-- utilize o equipamento em ambiente ventilado;
-- não deixe o sistema funcionando sem supervisão;
-- confirme a leitura do termistor antes de ativar o aquecedor;
-- mantenha um meio físico de desligar a alimentação.
-
-> A versão atual do firmware identifica valores extremos do termistor, mas ainda deve ser ajustada para desligar automaticamente o aquecedor em caso de falha ou desconexão do sensor.
-
-## Contexto acadêmico
-
-Projeto desenvolvido no curso de Ciência da Computação da Universidade Católica de Pernambuco, na disciplina de Tecnologias Digitais para Inovação Social.
+**Pontos de melhoria e segurança:**
+- Calibração do termistor, estabilidade térmica e avaliação de controle por histerese ou PID[cite: 7].
+- Limite máximo de temperatura e desligamento automático em caso de falha/desconexão do sensor[cite: 7].
+- Validação de comandos seriais e testes do filamento em impressoras 3D[cite: 7].
+- Cuidados de segurança: não tocar no hotend quente, manter partes móveis protegidas, verificar conexões e dissipação do L298N, usar ambiente ventilado, manter chave/meio físico de desligamento e operar apenas com garrafas PET limpas e secas[cite: 7].
 
 ## Equipe
 
@@ -234,8 +77,8 @@ Projeto desenvolvido no curso de Ciência da Computação da Universidade Catól
 - Willian Rodrigues
 - Ricardo Nery
 - Maria Luiza
-- Gabriel Araújo
+- Gabriel Araújo[cite: 7]
 
 ## Licença
 
-A licença de uso, modificação e distribuição do projeto ainda deverá ser definida.
+A licença de uso, modificação e distribuição do projeto ainda será definida[cite: 7].
