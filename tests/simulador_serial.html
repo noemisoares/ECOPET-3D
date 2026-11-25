@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste e Simulador — Extrusora PET</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <header class="border-b border-slate-800 pb-4 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-cyan-400">Simulador de Bancada — Extrusora PET</h1>
+        <p class="text-sm text-slate-400">Teste de telemetria JSON, temperatura e motor sem hardware conectado</p>
+      </div>
+      <span id="statusBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300">
+        Modo Manual
+      </span>
+    </header>
+
+    <!-- Cards de status simulados -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="text-xs text-slate-400">Temp. Atual</div>
+        <div id="simTemp" class="text-2xl font-mono font-bold text-amber-400 mt-1">25.0 °C</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="text-xs text-slate-400">Temp. Alvo</div>
+        <div id="simTarget" class="text-2xl font-mono font-bold text-cyan-400 mt-1">240 °C</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="text-xs text-slate-400">Velocidade Motor</div>
+        <div id="simSpeed" class="text-2xl font-mono font-bold text-emerald-400 mt-1">15 RPM</div>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+        <div class="text-xs text-slate-400">Relé / Aquecedor</div>
+        <div id="simRelay" class="text-2xl font-mono font-bold text-slate-300 mt-1">DESLIGADO</div>
+      </div>
+    </div>
+
+    <!-- Controles de teste -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+        <h2 class="font-bold text-lg">Ações de Teste</h2>
+
+        <div class="flex flex-wrap gap-2">
+          <button onclick="enviarLeituraSimulada(230, 240, 15, 1, 1)" class="px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-sm font-semibold hover:bg-amber-500/30">
+            Aquecendo (230°C)
+          </button>
+          <button onclick="enviarLeituraSimulada(242.5, 240, 18, 0, 1)" class="px-3 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-sm font-semibold hover:bg-emerald-500/30">
+            No Alvo Extrudando (242.5°C)
+          </button>
+          <button onclick="alternarAutoSimulacao()" id="autoBtn" class="px-3 py-2 rounded-lg bg-cyan-500 text-slate-950 text-sm font-bold hover:bg-cyan-400">
+            Iniciar Auto-Teste
+          </button>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 space-y-2">
+          <label for="jsonInput" class="block text-xs font-semibold text-slate-400">
+            Enviar JSON customizado (como o Arduino enviaria):
+          </label>
+          <input id="jsonInput" type="text" value='{"temp":238.4,"target":240,"speed":15,"relay":1,"motor":1}'
+            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 font-mono text-xs text-slate-200">
+          <button onclick="enviarJsonCustomizado()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm font-semibold">
+            Processar JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-bold text-lg">Log de Simulação</h2>
+          <button onclick="limparLog()" class="text-xs text-slate-400 hover:text-slate-200">Limpar</button>
+        </div>
+        <pre id="logBox" class="bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs font-mono text-emerald-300 h-44 overflow-y-auto"></pre>
+      </div>
+    </div>
+
+    <!-- Gráfico -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5">
+      <h2 class="font-bold text-lg mb-3">Gráfico Simulado de Temperatura</h2>
+      <div class="h-64">
+        <canvas id="simChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let tempAtualSim = 25.0;
+    let timerAuto = null;
+
+    const ctx = document.getElementById("simChart").getContext("2d");
+    const simChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            label: "Temp. Simulada (°C)",
+            data: [],
+            borderColor: "#f59e0b",
+            backgroundColor: "rgba(245, 158, 11, 0.15)",
+            fill: true,
+            tension: 0.3
+          },
+          {
+            label: "Temp. Alvo (°C)",
+            data: [],
+            borderColor: "#06b6d4",
+            borderDash: [5, 5]
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: "#94a3b8" }, grid: { color: "#1e293b" } },
+          y: { ticks: { color: "#94a3b8" }, grid: { color: "#1e293b" }, suggestedMin: 20, suggestedMax: 270 }
+        },
+        plugins: { legend: { labels: { color: "#cbd5e1" } } }
+      }
+    });
+
+    function registrarLog(texto) {
+      const logBox = document.getElementById("logBox");
+      const hora = new Date().toLocaleTimeString();
+      logBox.textContent += `[${hora}] ${texto}\n`;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function aplicarDados(dados) {
+      const temp = Number(dados.temp ?? 0);
+      const target = Number(dados.target ?? 240);
+      const speed = Number(dados.speed ?? 0);
+      const relay = Number(dados.relay ?? 0);
+      const motor = Number(dados.motor ?? 0);
+
+      document.getElementById("simTemp").textContent = `${temp.toFixed(1)} °C`;
+      document.getElementById("simTarget").textContent = `${target} °C`;
+      document.getElementById("simSpeed").textContent = `${motor ? speed : 0} RPM`;
+      document.getElementById("simRelay").textContent = relay === 1 ? "AQUECENDO" : "DESLIGADO";
+
+      const agora = new Date().toLocaleTimeString();
+      simChart.data.labels.push(agora);
+      simChart.data.datasets[0].data.push(temp);
+      simChart.data.datasets[1].data.push(target);
+
+      if (simChart.data.labels.length > 25) {
+        simChart.data.labels.shift();
+        simChart.data.datasets[0].data.shift();
+        simChart.data.datasets[1].data.shift();
+      }
+      simChart.update("none");
+      registrarLog(`Recebido: ${JSON.stringify(dados)}`);
+    }
+
+    function enviarLeituraSimulada(temp, target, speed, relay, motor) {
+      aplicarDados({ temp, target, speed, relay, motor });
+    }
+
+    function enviarJsonCustomizado() {
+      const raw = document.getElementById("jsonInput").value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        aplicarDados(parsed);
+      } catch (e) {
+        registrarLog(`ERRO: JSON inválido -> ${raw}`);
+      }
+    }
+
+    function alternarAutoSimulacao() {
+      const btn = document.getElementById("autoBtn");
+      const badge = document.getElementById("statusBadge");
+
+      if (timerAuto) {
+        clearInterval(timerAuto);
+        timerAuto = null;
+        btn.textContent = "Iniciar Auto-Teste";
+        badge.textContent = "Modo Manual";
+        registrarLog("Auto-teste pausado.");
+        return;
+      }
+
+      btn.textContent = "Parar Auto-Teste";
+      badge.textContent = "Auto-Teste Ativo";
+      registrarLog("Auto-teste iniciado (aquecendo até 240°C)...");
+
+      timerAuto = setInterval(() => {
+        const alvo = 240;
+        if (tempAtualSim < alvo) {
+          tempAtualSim += 6.5;
+        } else {
+          tempAtualSim = alvo + (Math.random() * 2 - 1);
+        }
+        const relay = tempAtualSim < alvo - 1 ? 1 : 0;
+        aplicarDados({
+          temp: Number(tempAtualSim.toFixed(1)),
+          target: alvo,
+          speed: 15,
+          relay,
+          motor: 1
+        });
+      }, 600);
+    }
+
+    function limparLog() {
+      document.getElementById("logBox").textContent = "";
+    }
+  </script>
+</body>
+</html>
